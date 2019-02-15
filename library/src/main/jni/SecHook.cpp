@@ -80,9 +80,7 @@ static int doBackupAndHook(void *targetMethod, void *hookMethod, void *backupMet
     return 0;
 }
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_lab_galaxy_yahfa_HookMain_init(JNIEnv *env, jclass clazz, jint sdkVersion) {
+void SecHook_init(JNIEnv *env, jclass clazz, jint sdkVersion) {
     SDKVersion = sdkVersion;
     LOGI("init to SDK %d", sdkVersion);
     kAccCompileDontBother = 0x02000000;
@@ -96,9 +94,7 @@ Java_lab_galaxy_yahfa_HookMain_init(JNIEnv *env, jclass clazz, jint sdkVersion) 
     setupTrampoline();
 }
 
-extern "C"
-JNIEXPORT jobject JNICALL
-Java_lab_galaxy_yahfa_HookMain_findMethodNative(JNIEnv *env, jclass clazz,
+jobject SecHook_findMethodNative(JNIEnv *env, jclass clazz,
                                                         jclass targetClass, jstring methodName,
                                                         jstring methodSig) {
     const char *c_methodName = env->GetStringUTFChars(methodName, NULL);
@@ -123,9 +119,7 @@ Java_lab_galaxy_yahfa_HookMain_findMethodNative(JNIEnv *env, jclass clazz,
     return ret;
 }
 
-extern "C"
-JNIEXPORT jboolean JNICALL
-Java_lab_galaxy_yahfa_HookMain_backupAndHookNative(JNIEnv *env, jclass clazz,
+jboolean SecHook_backupAndHookNative(JNIEnv *env, jclass clazz,
                                                             jobject target, jobject hook,
                                                             jobject backup) {
 
@@ -139,4 +133,31 @@ Java_lab_galaxy_yahfa_HookMain_backupAndHookNative(JNIEnv *env, jclass clazz,
     } else {
         return JNI_FALSE;
     }
+}
+
+static const JNINativeMethod gMethods[] = {
+        {"backupAndHookNative", "(Ljava/lang/Object;Ljava/lang/reflect/Method;Ljava/lang/reflect/Method;)Z", (jboolean *)SecHook_backupAndHookNative},
+        {"findMethodNative", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;", (jobject )SecHook_findMethodNative},
+        {"init", "(I)V", (void *)SecHook_init},
+
+};
+
+static const char* const kClassName = "lab/galaxy/yahfa/HookMain";
+JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void *reserved) {
+    JNIEnv *env = NULL;
+    if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) != JNI_OK) {
+        return -1;
+    }
+
+    jclass myClass = env->FindClass(kClassName);
+    if (myClass == NULL) {
+        return -1;
+    }
+
+    if (env->RegisterNatives(myClass, gMethods, sizeof(gMethods)/ sizeof(gMethods[0])) < 0) {
+        return -1;
+    }
+
+    return JNI_VERSION_1_6;
+
 }
