@@ -18,6 +18,7 @@ unsigned int hookCount = 0;
 // 1. set eax/r0/x0 to the hook ArtMethod addr
 // 2. jump into its entry point
 
+#define __aarch64__ 1
 
 #if defined(__arm__)
 // 00 00 9F E5 ; ldr r0, [pc, #0]
